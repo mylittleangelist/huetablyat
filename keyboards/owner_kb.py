@@ -61,10 +61,12 @@ def get_owner_panel() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton(text="Назначить ЗГС", callback_data="op_assign_zgs",
                                  icon_custom_emoji_id="5891207662678317861"),
-            InlineKeyboardButton(text="Назначить Рук. Мод.", callback_data="op_assign_rm",
-                                 icon_custom_emoji_id="5891207662678317861"),
+            InlineKeyboardButton(text="Снять ЗГС", callback_data="op_remove_zgs",
+                                 icon_custom_emoji_id="5893192487324880883"),
         ],
         [
+            InlineKeyboardButton(text="Назначить Рук. Мод.", callback_data="op_assign_rm",
+                                 icon_custom_emoji_id="5891207662678317861"),
             InlineKeyboardButton(text="Назначить Следящего", callback_data="op_assign_watcher",
                                  icon_custom_emoji_id="5870994129244131212"),
         ],

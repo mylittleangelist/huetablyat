@@ -66,6 +66,9 @@ class FindChat(StatesGroup):
 class RemoveWatcher(StatesGroup):
     number = State()
 
+class RemoveZgs(StatesGroup):
+    number = State()
+
 class RenameUser(StatesGroup):
     number = State()
     new_name = State()
@@ -912,6 +915,67 @@ async def remove_watcher_number(message: Message, state: FSMContext):
 
     await message.answer(
         f'{em("5870633910337015697","✅")} Следящий <b>@{name}</b> снят с должности.',
+        parse_mode=ParseMode.HTML
+    )
+
+
+@router.callback_query(F.data == "op_remove_zgs")
+async def op_remove_zgs(callback: CallbackQuery, state: FSMContext):
+    user = await db.get_user(callback.from_user.id)
+    if not user or not can_assign_zgs(user["role"]):
+        await callback.answer("Нет доступа", show_alert=True)
+        return
+
+    zgs_list = await db.get_users_by_role("zgs")
+    if not zgs_list:
+        await callback.message.edit_text(
+            f'{em("6028435952299413210","ℹ")} <b>ЗГС нет.</b>',
+            parse_mode=ParseMode.HTML
+        )
+        await callback.answer()
+        return
+
+    lines = [f'{em("5893192487324880883","👤")} <b>Снятие ЗГС</b>\n']
+    for i, w in enumerate(zgs_list, start=1):
+        name = w.get("username") or w.get("full_name") or str(w["telegram_id"])
+        lines.append(f'<b>{i}.</b> @{name} (ID: {w["telegram_id"]})')
+    lines.append(f'\n{em("5870875489362513438","🗑")} Введите <b>номер</b> ЗГС для снятия:')
+
+    await callback.message.edit_text(
+        "\n".join(lines),
+        parse_mode=ParseMode.HTML,
+        reply_markup=get_cancel_kb()
+    )
+    await state.update_data(zgs_list=[w["telegram_id"] for w in zgs_list])
+    await state.set_state(RemoveZgs.number)
+    await callback.answer()
+
+
+@router.message(RemoveZgs.number)
+async def remove_zgs_number(message: Message, state: FSMContext):
+    data = await state.get_data()
+    zgs_list = data.get("zgs_list", [])
+
+    try:
+        num = int(message.text.strip())
+        if num < 1 or num > len(zgs_list):
+            raise ValueError
+    except ValueError:
+        await message.answer(
+            f'{em("5870657884844462243","❌")} Введите число от 1 до {len(zgs_list)}.',
+            parse_mode=ParseMode.HTML
+        )
+        return
+
+    target_id = zgs_list[num - 1]
+    target_user = await db.get_user(target_id)
+    name = target_user.get("username") or target_user.get("full_name") or str(target_id)
+
+    await db.remove_user(target_id)
+    await state.clear()
+
+    await message.answer(
+        f'{em("5870633910337015697","✅")} ЗГС <b>@{name}</b> снят(а) с должности.',
         parse_mode=ParseMode.HTML
     )
 
